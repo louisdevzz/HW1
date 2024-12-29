@@ -4,17 +4,34 @@ from surprise.model_selection import train_test_split as surprise_train_test_spl
 
 class HybridRecommender:
     def __init__(self):
+        """
+        Initialize the HybridRecommender class.
+        """
         self.collaborative_model = None
         self.project_features = None
         self.user_preferences = None
         self.max_donation = None
 
     def load_data(self, interactions_file, projects_file, users_file):
+        """
+        Load data from CSV files containing user interactions, projects, and user information.
+
+        Args:
+            interactions_file (str): Path to CSV file containing user-project interactions
+            projects_file (str): Path to CSV file containing project details
+            users_file (str): Path to CSV file containing user information
+        """
         self.interactions = pd.read_csv(interactions_file)
         self.projects = pd.read_csv(projects_file)
         self.users = pd.read_csv(users_file)
 
     def preprocess_data(self):
+        """
+        Preprocess interaction data by normalizing donation amounts to a 0-1 scale.
+        
+        Returns:
+            surprise.dataset.Dataset: Processed dataset ready for collaborative filtering
+        """
         # Normalize donation amounts to a 0-1 scale
         self.max_donation = self.interactions['donation_amount'].max()
         interactions_normalized = self.interactions.copy()
@@ -29,22 +46,54 @@ class HybridRecommender:
         return data
 
     def train_collaborative_model(self, data):
+        """
+        Train the collaborative filtering model using SVD algorithm.
+        
+        Args:
+            data (surprise.dataset.Dataset): Preprocessed dataset for training
+        """
         trainset, _ = surprise_train_test_split(data, test_size=0.2, random_state=42)
         self.collaborative_model = SVD(n_factors=100, n_epochs=20, lr_all=0.005, reg_all=0.02)
         self.collaborative_model.fit(trainset)
 
     def train_content_based_model(self):
+        """
+        Train the content-based model by creating project feature dictionaries
+        and user preference mappings based on project categories.
+        """
         self.project_features = self.projects.set_index("project_id")["category"].to_dict()
         self.user_preferences = self.interactions.groupby("user_id")["project_id"].apply(list).to_dict()
 
     def knowledge_based_recommendation(self, user_id):
+        """
+        Generate knowledge-based recommendations by matching user interests with project categories.
+        
+        Args:
+            user_id: The ID of the user to generate recommendations for
+            
+        Returns:
+            list: List of recommended project IDs based on user interests
+        """
         user_info = self.users[self.users["user_id"] == user_id].iloc[0]
         user_interests = user_info["interests"]
 
         recommended_projects = self.projects[self.projects["category"] == user_interests]
         return recommended_projects["project_id"].tolist()
 
+
     def hybrid_recommendation(self, user_id):
+        """
+        Generate hybrid recommendations by combining collaborative filtering and content-based approaches.
+        
+        Args:
+            user_id: The ID of the user to generate recommendations for
+            
+        Returns:
+            list: Top 10 recommended project IDs based on hybrid scoring
+            
+        Raises:
+            ValueError: If models haven't been trained before making recommendations
+        """
         if not self.collaborative_model or not self.project_features:
             raise ValueError("Models have not been trained. Please train them before making recommendations.")
 
@@ -54,8 +103,6 @@ class HybridRecommender:
             project_id: self.collaborative_model.predict(user_id, project_id).est * self.max_donation
             for project_id in unique_projects
         }
-
-        # Get Content-Based scores
         user_projects = self.user_preferences.get(user_id, [])
         content_scores = {
             project_id: sum(
@@ -64,13 +111,10 @@ class HybridRecommender:
             )
             for project_id in unique_projects
         }
-
-        # Combine scores
         hybrid_scores = {
             project_id: cf_scores.get(project_id, 0) + content_scores.get(project_id, 0)
             for project_id in unique_projects
         }
-
         # Sort recommendations
         recommended_projects = sorted(hybrid_scores.items(), key=lambda x: x[1], reverse=True)[:10]
         return [project_id for project_id, _ in recommended_projects]

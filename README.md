@@ -65,12 +65,42 @@ Our system integrates three recommendation strategies:
 
 ### Key Components
 ```python
-- load_data(): Loads interaction, project, and user data
-- preprocess_data(): Prepares data for Surprise library
-- train_collaborative_model(): Trains SVD model
-- train_content_based_model(): Builds category-based recommendations
-- knowledge_based_recommendation(): Generates interest-based suggestions
-- hybrid_recommendation(): Combines multiple recommendation approaches
+# Core Data Functions
+load_data(interactions_file, projects_file, users_file):
+    # Loads and validates three main data sources:
+    # - interactions.csv: Historical donation data
+    # - projects.csv: Project metadata and categories
+    # - users.csv: User profiles and interests
+
+preprocess_data():
+    # Prepares interaction data for model training:
+    # - Normalizes donation amounts to 0-1 scale
+    # - Configures Surprise Reader with rating scale
+    # - Returns formatted Dataset object
+
+# Model Training Functions
+train_collaborative_model(data):
+    # Trains SVD collaborative filtering model:
+    # - Implements 80/20 train-test split
+    # - Uses optimized hyperparameters (n_factors=100, n_epochs=20)
+    # - Fits model on normalized donation data
+
+train_content_based_model():
+    # Builds content-based recommendation components:
+    # - Creates project category mapping
+    # - Builds user preference profiles from donation history
+
+# Recommendation Generation
+knowledge_based_recommendation(user_id):
+    # Generates recommendations based on explicit user interests:
+    # - Matches user interests with project categories
+    # - Returns list of matching project IDs
+
+hybrid_recommendation(user_id):
+    # Combines multiple recommendation approaches:
+    # - Generates collaborative filtering scores
+    # - Calculates content-based similarity scores
+    # - Returns top 10 projects based on combined scoring
 ```
 
 ### Performance Metrics
