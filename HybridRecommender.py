@@ -151,3 +151,49 @@ class HybridRecommender:
         # Sort recommendations
         recommended_projects = sorted(hybrid_scores.items(), key=lambda x: x[1], reverse=True)[:10]
         return [project_id for project_id, _ in recommended_projects]
+
+    def plot_hybrid_recommendation(self, user_id):
+        """
+        Plot a bar chart of hybrid recommendations for a given user.
+
+        Args:
+            user_id: The ID of the user to generate recommendations for
+        """
+        recommended_project_ids = self.hybrid_recommendation(user_id)
+        recommended_projects = self.projects[
+            self.projects["project_id"].isin(recommended_project_ids)
+        ]
+
+        unique_projects = self.interactions["project_id"].unique()
+        cf_scores = {
+            project_id: self.collaborative_model.predict(user_id, project_id).est * self.max_donation
+            for project_id in unique_projects
+        }
+        content_scores = {
+            project_id: sum(
+                self.project_features[project_id] == self.project_features.get(p, "")
+                for p in self.user_preferences.get(user_id, [])
+            )
+            for project_id in unique_projects
+        }
+        hybrid_scores = {
+            project_id: cf_scores.get(project_id, 0) + content_scores.get(project_id, 0)
+            for project_id in unique_projects
+        }
+
+        recommended_scores = {project_id: hybrid_scores[project_id] for project_id in recommended_project_ids}
+
+        recommended_projects = recommended_projects.assign(score=recommended_projects["project_id"].map(recommended_scores))
+        recommended_projects = recommended_projects.sort_values(by="score", ascending=False)
+
+        plt.figure(figsize=(10, 6))
+        sns.barplot(
+            x="score", 
+            y="title", 
+            data=recommended_projects, 
+            palette="Blues_d"
+        )
+        plt.title(f"Top Recommended Projects for User {user_id} (Hybrid)", fontsize=16)
+        plt.xlabel("Hybrid Score", fontsize=14)
+        plt.ylabel("Project Name", fontsize=14)
+        plt.show()

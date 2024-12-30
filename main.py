@@ -38,3 +38,6 @@ recommender.knowledge_based_recommendation(user_id=123)
 
 # Generate hybrid recommendations
 recommender.hybrid_recommendation(user_id=123)
+
+# Plot the hybrid recommendations
+recommender.plot_hybrid_recommendation(user_id=123)
