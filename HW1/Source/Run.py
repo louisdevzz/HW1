@@ -1,10 +1,10 @@
-import HybridRecommender
+import HW1.Source.HybridRecommender as HybridRecommender
 
 # Initialize the recommender
 recommender = HybridRecommender()
 
 # Load the data
-recommender.load_data("interactions.csv", "projects.csv", "users.csv")
+recommender.load_data("/Data/interactions.csv", "/Data/projects.csv", "/Data/users.csv")
 
 # Preprocess the data
 data = recommender.preprocess_data()
