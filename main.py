@@ -17,6 +17,15 @@ for idx, (uid, iid, rating) in enumerate(trainset.all_ratings()):
         break
     print(f"User ID: {trainset.to_raw_uid(uid)}, Project ID: {trainset.to_raw_iid(iid)}, Donation (normalized): {rating}")
 
+# Plot the donation distribution
+recommender.plot_donation_distribution()
+
+# Plot the total donations by category
+recommender.plot_total_donations_by_category()
+
+# Plot the top users by donations
+recommender.plot_top_users_by_donations()
+
 
 # Train the collaborative model
 recommender.train_collaborative_model(data)
