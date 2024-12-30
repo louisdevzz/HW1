@@ -1,6 +1,9 @@
 import pandas as pd
+import numpy as np
 from surprise import Dataset, Reader, SVD
 from surprise.model_selection import train_test_split as surprise_train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class HybridRecommender:
     def __init__(self):
@@ -28,7 +31,7 @@ class HybridRecommender:
     def preprocess_data(self):
         """
         Preprocess interaction data by normalizing donation amounts to a 0-1 scale.
-        
+
         Returns:
             surprise.dataset.Dataset: Processed dataset ready for collaborative filtering
         """
@@ -45,10 +48,40 @@ class HybridRecommender:
         )
         return data
 
+    def plot_donation_distribution(self):
+        plt.figure(figsize=(10, 6))
+        sns.histplot(self.interactions['donation_amount'], bins=30, kde=True, color='blue')
+        plt.title('Distribution of Donation Amounts', fontsize=16)
+        plt.xlabel('Donation Amount', fontsize=14)
+        plt.ylabel('Frequency', fontsize=14)
+        plt.show()
+    
+    def plot_total_donations_by_category(self):
+        merged = self.interactions.merge(self.projects, on="project_id")
+        category_donations = merged.groupby("category")["donation_amount"].sum().sort_values(ascending=False)
+
+        plt.figure(figsize=(12, 6))
+        category_donations.plot(kind="bar", color="skyblue")
+        plt.title("Total Donations by Project Category", fontsize=16)
+        plt.xlabel("Category", fontsize=14)
+        plt.ylabel("Total Donations", fontsize=14)
+        plt.xticks(rotation=45)
+        plt.show()
+
+    def plot_top_users_by_donations(self):
+        user_donations = self.interactions.groupby("user_id")["donation_amount"].count().nlargest(10)
+
+        plt.figure(figsize=(12, 6))
+        user_donations.plot(kind="bar", color="purple")
+        plt.title("Top 10 Users by Number of Donations", fontsize=16)
+        plt.xlabel("User ID", fontsize=14)
+        plt.ylabel("Number of Donations", fontsize=14)
+        plt.show()
+
     def train_collaborative_model(self, data):
         """
         Train the collaborative filtering model using SVD algorithm.
-        
+
         Args:
             data (surprise.dataset.Dataset): Preprocessed dataset for training
         """
@@ -67,10 +100,10 @@ class HybridRecommender:
     def knowledge_based_recommendation(self, user_id):
         """
         Generate knowledge-based recommendations by matching user interests with project categories.
-        
+
         Args:
             user_id: The ID of the user to generate recommendations for
-            
+
         Returns:
             list: List of recommended project IDs based on user interests
         """
@@ -84,13 +117,13 @@ class HybridRecommender:
     def hybrid_recommendation(self, user_id):
         """
         Generate hybrid recommendations by combining collaborative filtering and content-based approaches.
-        
+
         Args:
             user_id: The ID of the user to generate recommendations for
-            
+
         Returns:
             list: Top 10 recommended project IDs based on hybrid scoring
-            
+
         Raises:
             ValueError: If models haven't been trained before making recommendations
         """
